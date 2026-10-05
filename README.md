@@ -2,38 +2,55 @@
 
 Adek Koçluk için self-hosted Supabase yığını (Dokploy üzerinde çalışır).
 
-## Bu depo nedir
-
-Supabase'in resmi self-host paketinin **sabitlenmiş** bir kopyası:
+## Sabitlenmiş upstream
 
 ```
 upstream: supabase/supabase
-commit:   0a40e0e5e59043549877ab393e34f7ebe5f5a8e1   (25 Nisan 2025)
+commit:   cb52c0f42565032ab3f1cfb9a48fe4c44aad381e
 ```
 
-Bu commit, Dokploy'daki şablonun türetildiği sürümün **tam karşılığı** —
-13 imajın 13'ü birebir aynıydı. Bu yüzden `volumes/` altındaki destek
-dosyaları `docker-compose.yml` ile uyumludur. Master'dan alınsaydı
-`kong.yml` tanımsız değişkenler (`$SUPABASE_PUBLISHABLE_KEY`,
-`$LUA_AUTH_EXPR`) isteyeceği için Kong hiç başlamazdı.
+PostgreSQL **17.6.1.136** + storage-api **v1.74.0** + GoTrue **v2.196.0**.
+Geçit: **Envoy** (`api-gw` servisi, konteyner adı `supabase-envoy`).
+
+## Neden bu sürüm
+
+İlk denemede Nisan 2025 yığını (Kong + PG 15) kullanıldı, yalnızca `db`
+imajı PostgreSQL 17'ye çekildi. Çünkü taşınacak yedek canlıdan
+**PostgreSQL 17.6** ile alındı ve PG 15'e geri yüklenemez.
+
+Bu karışım `storage` servisini kırdı:
+
+```
+Migration failed. Reason: relation "migrations" does not exist
+```
+
+`storage-api v1.22.7` (Nisan 2025), `supabase/postgres` imajının içinde
+hazır gelen `storage.migrations` tablosunu arıyor; Eylül 2026 imajında o
+şema farklı kurgulanıyor.
+
+Upstream tarihçesi kontrol edildi:
+
+| Dönem | PostgreSQL | Geçit |
+|---|---|---|
+| 2025-04 → 2026-06 | 15 | Kong |
+| 2026-03 sonrası | 15 | Envoy |
+| 2026-07 sonrası | **17.6** | **Envoy** |
+
+**PostgreSQL 17 + Kong diye bir upstream kombinasyonu hiç olmadı.**
+PG 15'e dönülemeyeceği için tek doğru yol Envoy dönemine geçmekti.
 
 ## Upstream'den TEK farkı
 
-```diff
-- image: supabase/postgres:15.8.1.060
-+ image: supabase/postgres:17.6.1.178
+`api-gw` servisinin `ports:` satırı kapatıldı, yerine `expose:` kondu.
+Sunucuda 8000 portunu başka bir servis tutuyor ve ilk deploy şu hatayla
+düşmüştü:
+
+```
+Bind for 0.0.0.0:8000 failed: port is already allocated
 ```
 
-**Zorunlu.** Taşınan veritabanı yedeği PostgreSQL **17.6**'dan alındı
-(canlı: `17.6.1.121`). PostgreSQL yedekleri ileriye uyumludur, geriye
-değil — PG 15'e geri yüklenemezdi.
-
-## Neden git deposu
-
-Dokploy'da "Raw" compose kullanılırsa `volumes/` altındaki 11 destek
-dosyası sunucuda oluşmaz; `db` rolleri kuramaz, `kong` yapılandırmasız
-başlar, `vector` ve `supavisor` hiç kalkmaz. Git provider ile dosyalar
-her deploy'da garanti yerinde olur.
+Dokploy/Traefik bu servise Docker ağı üzerinden ulaştığı için portu
+sunucuya açmaya gerek yok.
 
 ## Dokploy ayarları
 
@@ -42,14 +59,16 @@ her deploy'da garanti yerinde olur.
 | Provider | Git |
 | Branch | `main` |
 | Compose Path | `docker-compose.yml` |
-| Domain → Service | `kong`, port `8000` |
+| Domain → Service | **`api-gw`**, port `8000` |
 
-Gizli değerler **bu depoda değil**, Dokploy'un Environment sekmesinde.
+Gizli değerler bu depoda değil, Dokploy'un Environment sekmesinde.
+Kimlik doğrulama **HS256 (legacy)** yolunu kullanıyor: `JWT_KEYS`,
+`JWT_JWKS` ve asimetrik anahtarlar bilerek boş bırakıldı — mobil
+uygulama ve web sitesi HS256 `ANON_KEY` ile çalışıyor.
 
-## Bilinen kozmetik uyumsuzluk
+## Not: analytics ve vector yok
 
-`volumes/logs/vector.yml` yedi konteyner adı bekler; compose ikisini
-farklı adlandırır (`supabase-edge-functions` ↔ `supabase-functions`,
-`realtime-dev.supabase-realtime` ↔ `supabase-realtime`). Upstream'in
-kendi tutarsızlığı. Etkisi yalnızca Studio'nun Logs ekranında bu iki
-servisin kayıtlarının görünmemesi; çalışmaya etkisi yok.
+Bu sürümde `logflare` ve `vector` temel compose'dan çıkarılmış
+(`docker-compose.logs.yml` katmanına taşınmış). İki konteyner daha az
+ve önceki sürümdeki `vector.yml` konteyner-adı uyumsuzluğu da ortadan
+kalktı.

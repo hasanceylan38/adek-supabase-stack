@@ -9,7 +9,7 @@ upstream: supabase/supabase
 commit:   cb52c0f42565032ab3f1cfb9a48fe4c44aad381e
 ```
 
-PostgreSQL **17.6.1.136** + storage-api **v1.74.0** + GoTrue **v2.196.0**.
+PostgreSQL **17.6.1.178** + storage-api **v1.74.0** + GoTrue **v2.196.0**.
 Geçit: **Envoy** (`api-gw` servisi, konteyner adı `supabase-envoy`).
 
 ## Neden bu sürüm
@@ -39,7 +39,17 @@ Upstream tarihçesi kontrol edildi:
 **PostgreSQL 17 + Kong diye bir upstream kombinasyonu hiç olmadı.**
 PG 15'e dönülemeyeceği için tek doğru yol Envoy dönemine geçmekti.
 
-## Upstream'den TEK farkı
+## Upstream'den farklar
+
+### 1. PostgreSQL yama sürümü
+
+Upstream `17.6.1.136` veriyor; burada `17.6.1.178` kullanılıyor.
+Sunucudaki PGDATA dizini `.178` ile olusturuldu; daha eski bir yamaya
+dönmek dizini acilamaz hale getirebilirdi. Ikisi de PostgreSQL 17.6,
+aradaki fark birkac haftalik yama. storage-api v1.74.0 da ayni donemden
+oldugu icin ilk denemedeki uyumsuzluk burada soz konusu degil.
+
+### 2. Gecidin portu
 
 `api-gw` servisinin `ports:` satırı kapatıldı, yerine `expose:` kondu.
 Sunucuda 8000 portunu başka bir servis tutuyor ve ilk deploy şu hatayla

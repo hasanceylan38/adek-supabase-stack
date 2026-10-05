@@ -560,7 +560,24 @@ services:
         "-c",
         "config_file=/etc/postgresql/postgresql.conf",
         "-c",
-        "log_min_messages=fatal" # prevents Realtime polling queries from appearing in logs
+        "log_min_messages=fatal", # prevents Realtime polling queries from appearing in logs
+        # --- Adek: sorgu planlayici ayarlari (5 Ekim 2026) ------------------
+        # Supabase bulutundaki canli degerlerle esitlendi. Varsayilanlarla
+        # agir RLS politikalari olan ekranlar zaman asimina ugruyordu:
+        #   ogrenci listesi / program / denemeler -> 504 Gateway Timeout
+        # Olculdu, ayni sorgu ayni veriyle:
+        #   varsayilan ayarlar : 4187 ms
+        #   bu ayarlar         :  865 ms   (canli: ~800 ms)
+        # Belirleyici olan random_page_cost: varsayilan 4, donen disk
+        # varsayar ve planlayiciyi indeks kullanmaktan cayirir. SSD'de 1.1.
+        "-c",
+        "random_page_cost=1.1",
+        "-c",
+        "effective_io_concurrency=200",
+        "-c",
+        "effective_cache_size=384MB",
+        "-c",
+        "jit=off"
       ]
 
   # Update the DATABASE_URL if you are using an external Postgres database

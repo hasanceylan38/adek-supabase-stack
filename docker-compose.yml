@@ -481,6 +481,17 @@ services:
       SUPABASE_DB_URL: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       # TODO: Allow configuring VERIFY_JWT per function.
       VERIFY_JWT: "${FUNCTIONS_VERIFY_JWT}"
+
+      # --- Adek: push-gonder fonksiyonunun gizli ayarlari ------------------
+      # Degerler bu depoda DEGIL, Dokploy > Environment sekmesinde.
+      # Kaynak: projedeki supabase/functions/.env dosyasi.
+      # Bos kalirlarsa push-gonder calismaz ama yigin yine de ayaga kalkar.
+      FIREBASE_SERVICE_ACCOUNT: ${FIREBASE_SERVICE_ACCOUNT:-}
+      APNS_ANAHTAR: ${APNS_ANAHTAR:-}
+      APNS_KEY_ID: ${APNS_KEY_ID:-}
+      APNS_TEAM_ID: ${APNS_TEAM_ID:-}
+      APNS_BUNDLE_ID: ${APNS_BUNDLE_ID:-}
+      PUSH_TETIK_SIRRI: ${PUSH_TETIK_SIRRI:-}
     command:
       [
         "start",

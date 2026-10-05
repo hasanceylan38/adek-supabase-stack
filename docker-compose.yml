@@ -62,7 +62,8 @@ services:
       SNIPPETS_MANAGEMENT_FOLDER: /app/snippets
       EDGE_FUNCTIONS_MANAGEMENT_FOLDER: /app/edge-functions
     volumes:
-      - ./volumes/snippets:/app/snippets:z
+      # KALICI: adlandirilmis birim (bkz. asagidaki not)
+      - snippets-data:/app/snippets:z
       - ./volumes/functions:/app/edge-functions:ro,z
 
   # Envoy is the default API gateway
@@ -403,14 +404,16 @@ services:
       S3_PROTOCOL_ACCESS_KEY_ID: ${S3_PROTOCOL_ACCESS_KEY_ID}
       S3_PROTOCOL_ACCESS_KEY_SECRET: ${S3_PROTOCOL_ACCESS_KEY_SECRET}
     volumes:
-      - ./volumes/storage:/var/lib/storage:z
+      # KALICI: adlandirilmis birim
+      - storage-data:/var/lib/storage:z
 
   imgproxy:
     container_name: supabase-imgproxy
     image: darthsim/imgproxy:v3.31.4
     restart: unless-stopped
     volumes:
-      - ./volumes/storage:/var/lib/storage:z
+      # KALICI: adlandirilmis birim
+      - storage-data:/var/lib/storage:z
     healthcheck:
       test:
         [
@@ -507,7 +510,9 @@ services:
       # Initialize the database settings with JWT_EXP
       - ./volumes/db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:Z
       # PGDATA directory is persisted between restarts
-      - ./volumes/db/data:/var/lib/postgresql/data:Z
+      # KALICI: adlandirilmis birim. ./volumes/db/data OLAMAZ — orasi
+      # Dokploy'un git klonladigi dizin ve her deploy'da siliniyor.
+      - db-data:/var/lib/postgresql/data:Z
       # Changes required for internal supabase data such as _analytics
       - ./volumes/db/_supabase.sql:/docker-entrypoint-initdb.d/migrations/97-_supabase.sql:Z
       # Changes required for Analytics support
@@ -610,6 +615,22 @@ services:
   #       "/app/bin/migrate && /app/bin/supavisor eval \"$$(cat /etc/pooler/pooler.exs)\" && /app/bin/server"
   #     ]
   #
+# ---------------------------------------------------------------------------
+# KALICI BIRIMLER — 5 Ekim 2026
+#
+# Bu birimler onceden `./volumes/...` altinda bind mount olarak duruyordu.
+# Orasi Dokploy'un depoyu klonladigi `code/` dizini ve Dokploy her
+# deploy'da o dizini SIFIRLIYOR. Sonuc: her deploy veritabanini ve
+# yuklenen dosyalari siliyordu. Olculdu — tasinan 200 tablo, 776
+# kullanici ve 668 politika bir deploy'da yok oldu.
+#
+# Adlandirilmis birimler depo dizininin disinda durur, deploy'dan
+# etkilenmez. Yapilandirma dosyalari (*.sql, *.yaml, pooler.exs)
+# bind mount olarak kalmali — onlar zaten depodan gelmeli.
+# ---------------------------------------------------------------------------
 volumes:
+  db-data:
+  storage-data:
+  snippets-data:
   db-config:
   deno-cache:

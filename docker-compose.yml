@@ -336,7 +336,15 @@ services:
   # To use S3 backed storage: docker compose -f docker-compose.yml -f docker-compose.s3.yml up
   storage:
     container_name: supabase-storage
-    image: supabase/storage-api:v1.74.0
+    # ⚠️ Upstream v1.74.0 veriyor; v1.79.31 kullaniliyor.
+    # Canlidan tasinan storage semasi 72. gocte (bulut, storage deposunun
+    # en guncel hali). v1.74.0 hala "ON CONFLICT (bucket_id, name)"
+    # kullaniyor ama 0072-drop-bucketid-objname-index o benzersiz indeksi
+    # KALDIRMIS; dosya yuklerken PostgreSQL 42P10 donuyordu:
+    #   "there is no unique or exclusion constraint matching the
+    #    ON CONFLICT specification"
+    # v1.79.31 bu gocleri taniyor ve eksik 0073'u uyguluyor.
+    image: supabase/storage-api:v1.79.31
     restart: unless-stopped
     depends_on:
       db:

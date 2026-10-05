@@ -272,6 +272,16 @@ services:
       PGRST_DB_MAX_ROWS: ${PGRST_DB_MAX_ROWS:-1000}
       PGRST_DB_EXTRA_SEARCH_PATH: ${PGRST_DB_EXTRA_SEARCH_PATH:-public}
       PGRST_DB_ANON_ROLE: anon
+      # --- Adek: baglanti havuzu buyutuldu (5 Ekim 2026) -------------------
+      # Varsayilan 10. Panodaki student_exams sorgusu ~2 sn suruyor
+      # (canlida da ~1.3 sn — uygulamanin mevcut sorunu, tasimadan degil).
+      # Birkac kez cagrilinca havuz doluyor ve HIZLI istekler baglanti
+      # bulamayip oluyordu; tarayici bunu "CORS basligi yok" diye
+      # gosteriyor. Olculdu: agir sorgular calisirken basit bir GET
+      # 0.13 sn -> 3.3 sn -> 16 sn'de HTTP 500.
+      # max_connections=100, su an ~31 kullanimda; 40 rahatca sigar.
+      PGRST_DB_POOL: 40
+      PGRST_DB_POOL_ACQUISITION_TIMEOUT: 10
 
       PGRST_ADMIN_SERVER_PORT: 3001
       PGRST_ADMIN_SERVER_HOST: localhost

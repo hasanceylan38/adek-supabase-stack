@@ -72,13 +72,14 @@ services:
     container_name: supabase-envoy
     image: envoyproxy/envoy:v1.39.1
     restart: unless-stopped
-    networks:
-      default:
-        # Expose `envoy` and `kong` as network aliases, so internal configs
-        # that reference either hostname resolve to whichever gateway is active.
-        aliases:
-          - envoy
-          - kong
+    # `networks:` blogu BILINCLI OLARAK YOK (6 Ekim 2026).
+    # Upstream burada `default` agina `envoy`/`kong` takma adlari ekliyor.
+    # Dokploy izole dagitimda tum servisleri `adek-supabase-wqkxcy` agina
+    # koyuyor; `default` agi yalnizca bu konteynerde kaliyor ve Traefik o
+    # agda DEGIL. Iki IP'li konteynerde Traefik bazen erisemedigi IP'yi
+    # seciyordu -> yeni baglantinin ilk istegi 30 sn takilip 504
+    # (`server: envoy` basligi YOK = istek Envoy'a hic ulasmamis).
+    # Takma adlari kimse kullanmiyor; tum ic baglantilar `api-gw` adiyla.
     healthcheck:
       # Using a TCP port check because this image does not include curl or wget.
       test: ["CMD-SHELL", "timeout 1 bash -c '</dev/tcp/127.0.0.1/8000'"]
